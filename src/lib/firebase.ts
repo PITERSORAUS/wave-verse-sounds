@@ -5,12 +5,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "your-api-key",
-  authDomain: "your-project.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "your-app-id"
+  apiKey: "AIzaSyD003Z9Jy9KiGWqmA1NpGqT8J2feWqNnq8",
+  authDomain: "stereomix-prod.firebaseapp.com",
+  projectId: "stereomix-prod",
+  storageBucket: "stereomix-prod.firebasestorage.app",
+  messagingSenderId: "1017434587195",
+  appId: "1:1017434587195:web:66d940a54e2d111e131c1e"
 };
 
 // Initialize Firebase
