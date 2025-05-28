@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Upload, User, Menu, X } from "lucide-react";
+import { Search, Upload, User, Menu, X, LogOut } from "lucide-react";
+import { useAuth } from '@/hooks/useAuth';
 
 interface HeaderProps {
   onLogin: () => void;
@@ -11,6 +12,15 @@ interface HeaderProps {
 
 const Header = ({ onLogin, onRegister }: HeaderProps) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, userProfile, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
+  };
 
   return (
     <header className="absolute top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-lg border-b border-white/10">
@@ -35,21 +45,40 @@ const Header = ({ onLogin, onRegister }: HeaderProps) => {
                 className="pl-10 bg-white/10 border-white/20 text-white placeholder-gray-400 w-80"
               />
             </div>
-            <Button 
-              variant="ghost" 
-              className="text-white hover:bg-white/10"
-              onClick={onLogin}
-            >
-              <User className="mr-2 h-4 w-4" />
-              Login
-            </Button>
-            <Button 
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              onClick={onRegister}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Registrar
-            </Button>
+            
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-white">
+                  Olá, {userProfile?.username || user.email}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/10"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button 
+                  variant="ghost" 
+                  className="text-white hover:bg-white/10"
+                  onClick={onLogin}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Login
+                </Button>
+                <Button 
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  onClick={onRegister}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  Registrar
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -76,21 +105,39 @@ const Header = ({ onLogin, onRegister }: HeaderProps) => {
               />
             </div>
             <div className="flex flex-col space-y-2">
-              <Button 
-                variant="ghost" 
-                className="text-white hover:bg-white/10 justify-start"
-                onClick={onLogin}
-              >
-                <User className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-              <Button 
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 justify-start"
-                onClick={onRegister}
-              >
-                <Upload className="mr-2 h-4 w-4" />
-                Registrar
-              </Button>
+              {user ? (
+                <>
+                  <div className="text-white px-4 py-2">
+                    Olá, {userProfile?.username || user.email}
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    className="text-white hover:bg-white/10 justify-start"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    className="text-white hover:bg-white/10 justify-start"
+                    onClick={onLogin}
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Login
+                  </Button>
+                  <Button 
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 justify-start"
+                    onClick={onRegister}
+                  >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Registrar
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         )}
