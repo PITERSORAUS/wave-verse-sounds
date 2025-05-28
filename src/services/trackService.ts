@@ -1,4 +1,3 @@
-
 import { 
   collection, 
   addDoc, 
@@ -14,7 +13,8 @@ import {
   increment,
   arrayUnion,
   arrayRemove,
-  Timestamp
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
@@ -53,7 +53,7 @@ export const uploadTrack = async (
   audioFile: File,
   coverFile: File | null,
   trackData: Omit<Track, 'id' | 'audioUrl' | 'coverUrl' | 'createdAt' | 'updatedAt' | 'plays' | 'likes' | 'comments' | 'likedBy' | 'uniqueId'>
-) => {
+): Promise<Track> => {
   try {
     // Upload audio file
     const audioRef = ref(storage, `tracks/${trackData.userId}/${Date.now()}_${audioFile.name}`);
@@ -76,8 +76,8 @@ export const uploadTrack = async (
       ...trackData,
       audioUrl,
       coverUrl,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
       plays: 0,
       likes: 0,
       comments: 0,
@@ -86,7 +86,7 @@ export const uploadTrack = async (
     };
 
     const docRef = await addDoc(collection(db, 'tracks'), track);
-    return { id: docRef.id, ...track };
+    return { id: docRef.id, ...track, createdAt: Timestamp.now(), updatedAt: Timestamp.now() };
   } catch (error) {
     console.error('Error uploading track:', error);
     throw error;
@@ -203,8 +203,8 @@ export const addComment = async (trackId: string, userId: string, username: stri
       userId,
       username,
       content: content.trim(),
-      createdAt: Timestamp.now(),
-      lastActivity: Timestamp.now()
+      createdAt: serverTimestamp(),
+      lastActivity: serverTimestamp()
     };
 
     await addDoc(collection(db, 'comments'), comment);

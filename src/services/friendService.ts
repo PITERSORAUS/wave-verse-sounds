@@ -1,4 +1,3 @@
-
 import { 
   collection, 
   addDoc, 
@@ -11,7 +10,8 @@ import {
   orderBy,
   or,
   and,
-  Timestamp
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -40,8 +40,14 @@ export const sendFriendRequest = async (fromUserId: string, fromUsername: string
     const existingRequestQuery = query(
       collection(db, 'friendRequests'),
       or(
-        and(where('fromUserId', '==', fromUserId), where('toUserId', '==', toUserId)),
-        and(where('fromUserId', '==', toUserId), where('toUserId', '==', fromUserId))
+        and(
+          where('fromUserId', '==', fromUserId),
+          where('toUserId', '==', toUserId)
+        ),
+        and(
+          where('fromUserId', '==', toUserId),
+          where('toUserId', '==', fromUserId)
+        )
       )
     );
     const existingRequests = await getDocs(existingRequestQuery);
@@ -50,16 +56,48 @@ export const sendFriendRequest = async (fromUserId: string, fromUsername: string
       throw new Error('Friend request already exists');
     }
 
+    // Check if they are already friends
+    const existingFriendshipQuery = query(
+      collection(db, 'friendships'),
+      or(
+        and(
+          where('user1Id', '==', fromUserId),
+          where('user2Id', '==', toUserId)
+        ),
+        and(
+          where('user1Id', '==', toUserId),
+          where('user2Id', '==', fromUserId)
+        )
+      )
+    );
+    const existingFriendships = await getDocs(existingFriendshipQuery);
+
+    if (!existingFriendships.empty) {
+      throw new Error('Users are already friends');
+    }
+
     const request = {
       fromUserId,
       fromUsername,
       toUserId,
       toUsername,
       status: 'pending' as const,
-      createdAt: Timestamp.now()
+      createdAt: serverTimestamp()
     };
 
-    await addDoc(collection(db, 'friendRequests'), request);
+    const docRef = await addDoc(collection(db, 'friendRequests'), request);
+    
+    // Create notification for recipient
+    await addDoc(collection(db, 'notifications'), {
+      userId: toUserId,
+      type: 'friendRequest',
+      fromUserId,
+      fromUsername,
+      read: false,
+      createdAt: serverTimestamp()
+    });
+
+    return docRef.id;
   } catch (error) {
     console.error('Error sending friend request:', error);
     throw error;
@@ -69,22 +107,34 @@ export const sendFriendRequest = async (fromUserId: string, fromUsername: string
 export const acceptFriendRequest = async (requestId: string) => {
   try {
     const requestRef = doc(db, 'friendRequests', requestId);
-    await updateDoc(requestRef, { status: 'accepted' });
-
-    // Create friendship
     const requestDoc = await getDocs(query(collection(db, 'friendRequests'), where('__name__', '==', requestId)));
+    
     if (!requestDoc.empty) {
       const request = requestDoc.docs[0].data() as FriendRequest;
       
+      // Update request status
+      await updateDoc(requestRef, { status: 'accepted' });
+
+      // Create friendship
       const friendship = {
         user1Id: request.fromUserId,
         user1Username: request.fromUsername,
         user2Id: request.toUserId,
         user2Username: request.toUsername,
-        createdAt: Timestamp.now()
+        createdAt: serverTimestamp()
       };
 
       await addDoc(collection(db, 'friendships'), friendship);
+
+      // Create notification for sender
+      await addDoc(collection(db, 'notifications'), {
+        userId: request.fromUserId,
+        type: 'friendRequestAccepted',
+        fromUserId: request.toUserId,
+        fromUsername: request.toUsername,
+        read: false,
+        createdAt: serverTimestamp()
+      });
     }
   } catch (error) {
     console.error('Error accepting friend request:', error);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { 
   User,
@@ -8,8 +7,9 @@ import {
   onAuthStateChanged,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from '@/lib/firebase';
 
 interface UserProfile {
   uid: string;
@@ -29,6 +29,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUserProfile: (data: Partial<UserProfile>) => Promise<void>;
+  updateProfilePicture: (file: File) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -55,7 +56,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setUser(user);
       
       if (user) {
-        // Buscar perfil do usuário no Firestore
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setUserProfile(userDoc.data() as UserProfile);
@@ -77,12 +77,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const signUp = async (email: string, password: string, username: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     
-    // Atualizar perfil do usuário
     await updateProfile(user, {
       displayName: username
     });
 
-    // Criar documento do usuário no Firestore
     const userProfile: UserProfile = {
       uid: user.uid,
       email: user.email!,
@@ -104,7 +102,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const updatedProfile = { ...userProfile, ...data };
     await setDoc(doc(db, 'users', user.uid), updatedProfile, { merge: true });
+    
+    if (data.displayName) {
+      await updateProfile(user, { displayName: data.displayName });
+    }
+    
     setUserProfile(updatedProfile as UserProfile);
+  };
+
+  const updateProfilePicture = async (file: File) => {
+    if (!user) return;
+
+    const fileRef = ref(storage, `profilePictures/${user.uid}/${file.name}`);
+    const snapshot = await uploadBytes(fileRef, file);
+    const photoURL = await getDownloadURL(snapshot.ref);
+
+    await Promise.all([
+      updateProfile(user, { photoURL }),
+      updateDoc(doc(db, 'users', user.uid), { photoURL })
+    ]);
+
+    setUserProfile(prev => prev ? { ...prev, photoURL } : null);
   };
 
   const value = {
@@ -114,7 +132,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signUp,
     logout,
-    updateUserProfile
+    updateUserProfile,
+    updateProfilePicture
   };
 
   return (
