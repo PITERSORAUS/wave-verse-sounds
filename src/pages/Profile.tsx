@@ -6,21 +6,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Edit, Save, X, Music, Heart, Users, ArrowLeft } from "lucide-react";
-import { useNavigate } from 'react-router-dom';
+import { User, Edit, Save, X, Music, Heart, Users, ArrowLeft, Repeat } from "lucide-react";
+import { useNavigate, useParams } from 'react-router-dom';
 import DashboardHeader from '@/components/DashboardHeader';
 import { useAuth } from '@/hooks/useAuth';
+import { getUserTracks } from '@/services/trackService';
+import { getUserReposts } from '@/services/repostService';
+import MusicCard from '@/components/MusicCard';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const { userId } = useParams();
   const { user, userProfile, updateUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [userTracks, setUserTracks] = useState([]);
+  const [userReposts, setUserReposts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     username: '',
     displayName: '',
     bio: '',
     profilePicture: null as File | null
   });
+
+  const isOwnProfile = !userId || userId === user?.uid;
 
   useEffect(() => {
     if (userProfile) {
@@ -32,6 +41,31 @@ const Profile = () => {
       });
     }
   }, [userProfile]);
+
+  useEffect(() => {
+    if (user) {
+      loadUserData();
+    }
+  }, [user, userId]);
+
+  const loadUserData = async () => {
+    try {
+      setLoading(true);
+      const targetUserId = userId || user?.uid;
+      
+      const [tracks, reposts] = await Promise.all([
+        getUserTracks(targetUserId),
+        getUserReposts(targetUserId)
+      ]);
+      
+      setUserTracks(tracks);
+      setUserReposts(reposts);
+    } catch (error) {
+      console.error('Error loading user data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -83,7 +117,7 @@ const Profile = () => {
                   <User className="h-16 w-16 text-white" />
                 </div>
                 
-                {isEditing ? (
+                {isEditing && isOwnProfile ? (
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="username" className="text-white text-sm">Nome de usuário</Label>
@@ -128,48 +162,50 @@ const Profile = () => {
                 )}
               </div>
 
-              <div className="flex gap-2">
-                {isEditing ? (
-                  <>
+              {isOwnProfile && (
+                <div className="flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <Button
+                        onClick={handleSave}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
+                      >
+                        <Save className="mr-2 h-4 w-4" />
+                        Salvar
+                      </Button>
+                      <Button
+                        onClick={handleCancel}
+                        variant="outline"
+                        className="border-white/20 text-white hover:bg-white/10"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </>
+                  ) : (
                     <Button
-                      onClick={handleSave}
-                      className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600"
+                      onClick={() => setIsEditing(true)}
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
                     >
-                      <Save className="mr-2 h-4 w-4" />
-                      Salvar
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editar Perfil
                     </Button>
-                    <Button
-                      onClick={handleCancel}
-                      variant="outline"
-                      className="border-white/20 text-white hover:bg-white/10"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </>
-                ) : (
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Editar Perfil
-                  </Button>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Stats */}
               <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/20">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-white">0</div>
-                  <div className="text-sm text-gray-400">Músicas</div>
+                  <div className="text-2xl font-bold text-white">{userTracks.length}</div>
+                  <div className="text-sm text-gray-400">Faixas</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">{userReposts.length}</div>
+                  <div className="text-sm text-gray-400">Reposts</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white">0</div>
                   <div className="text-sm text-gray-400">Seguidores</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">0</div>
-                  <div className="text-sm text-gray-400">Seguindo</div>
                 </div>
               </div>
             </Card>
@@ -179,50 +215,106 @@ const Profile = () => {
           <div className="lg:col-span-2">
             <Tabs defaultValue="tracks" className="w-full">
               <TabsList className="grid w-full grid-cols-3 bg-white/10 border-white/20">
-                <TabsTrigger value="tracks" className="text-white">Músicas</TabsTrigger>
+                <TabsTrigger value="tracks" className="text-white">
+                  Faixas ({userTracks.length})
+                </TabsTrigger>
+                <TabsTrigger value="reposts" className="text-white">
+                  Reposts ({userReposts.length})
+                </TabsTrigger>
                 <TabsTrigger value="liked" className="text-white">Curtidas</TabsTrigger>
-                <TabsTrigger value="playlists" className="text-white">Playlists</TabsTrigger>
               </TabsList>
               
               <TabsContent value="tracks" className="mt-6">
-                <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8 text-center">
-                  <Music className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">Nenhuma música ainda</h3>
-                  <p className="text-gray-400 mb-4">
-                    Faça upload de suas primeiras músicas para aparecerem aqui
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/upload')}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600"
-                  >
-                    Fazer Upload
-                  </Button>
-                </Card>
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className="bg-white/10 backdrop-blur-lg border-white/20 p-4 animate-pulse">
+                        <div className="h-16 bg-white/20 rounded"></div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : userTracks.length > 0 ? (
+                  <div className="space-y-4">
+                    {userTracks.map((track) => (
+                      <MusicCard key={track.id} track={track} />
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8 text-center">
+                    <Music className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      {isOwnProfile ? 'Nenhuma música ainda' : 'Nenhuma música publicada'}
+                    </h3>
+                    <p className="text-gray-400 mb-4">
+                      {isOwnProfile 
+                        ? 'Faça upload de suas primeiras músicas para aparecerem aqui'
+                        : 'Este usuário ainda não publicou nenhuma música'
+                      }
+                    </p>
+                    {isOwnProfile && (
+                      <Button 
+                        onClick={() => navigate('/upload')}
+                        className="bg-gradient-to-r from-purple-600 to-pink-600"
+                      >
+                        Fazer Upload
+                      </Button>
+                    )}
+                  </Card>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="reposts" className="mt-6">
+                {loading ? (
+                  <div className="space-y-4">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className="bg-white/10 backdrop-blur-lg border-white/20 p-4 animate-pulse">
+                        <div className="h-16 bg-white/20 rounded"></div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : userReposts.length > 0 ? (
+                  <div className="space-y-4">
+                    {userReposts.map((repost) => (
+                      <Card key={repost.id} className="bg-white/10 backdrop-blur-lg border-white/20 p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Repeat className="h-4 w-4 text-green-400" />
+                          <span className="text-gray-300 text-sm">
+                            {isOwnProfile ? 'Você' : userProfile?.username} repostou
+                          </span>
+                        </div>
+                        {/* Here you would load and display the original track */}
+                        <div className="text-white">Track ID: {repost.trackId}</div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8 text-center">
+                    <Repeat className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">
+                      {isOwnProfile ? 'Nenhum repost ainda' : 'Nenhum repost'}
+                    </h3>
+                    <p className="text-gray-400">
+                      {isOwnProfile 
+                        ? 'Reposte músicas que você gosta para aparecerem aqui'
+                        : 'Este usuário ainda não repostou nenhuma música'
+                      }
+                    </p>
+                  </Card>
+                )}
               </TabsContent>
               
               <TabsContent value="liked" className="mt-6">
                 <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8 text-center">
                   <Heart className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">Nenhuma música curtida</h3>
+                  <h3 className="text-lg font-semibold text-white mb-2">
+                    {isOwnProfile ? 'Nenhuma música curtida' : 'Curtidas privadas'}
+                  </h3>
                   <p className="text-gray-400">
-                    Curta algumas músicas para vê-las aqui
+                    {isOwnProfile 
+                      ? 'Curta algumas músicas para vê-las aqui'
+                      : 'As curtidas deste usuário são privadas'
+                    }
                   </p>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="playlists" className="mt-6">
-                <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-8 text-center">
-                  <Music className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">Nenhuma playlist criada</h3>
-                  <p className="text-gray-400 mb-4">
-                    Crie playlists para organizar suas músicas favoritas
-                  </p>
-                  <Button 
-                    onClick={() => navigate('/playlists')}
-                    className="bg-gradient-to-r from-purple-600 to-pink-600"
-                  >
-                    Criar Playlist
-                  </Button>
                 </Card>
               </TabsContent>
             </Tabs>
