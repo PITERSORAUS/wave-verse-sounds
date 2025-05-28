@@ -1,68 +1,37 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, MessageCircle, Play, Pause, User, Search, Upload, Home, Users } from "lucide-react";
+import { Upload, Users, Heart, MessageCircle, Music, User, Plus } from "lucide-react";
 import Header from "@/components/Header";
-import MusicCard from "@/components/MusicCard";
 import AuthModal from "@/components/AuthModal";
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const Index = () => {
-  const [currentTrack, setCurrentTrack] = useState<number | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  // Mock data for demonstration
-  const mockTracks = [
-    {
-      id: 1,
-      title: "Midnight Vibes",
-      artist: "DJ Luna",
-      duration: "3:45",
-      likes: 1247,
-      views: 5821,
-      comments: 34,
-      cover: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=300&h=300&fit=crop",
-      isPublic: true
-    },
-    {
-      id: 2,
-      title: "Summer Dreams",
-      artist: "Acoustic Soul",
-      duration: "4:12",
-      likes: 892,
-      views: 3245,
-      comments: 18,
-      cover: "https://images.unsplash.com/photo-1582562124811-c09040d0a901?w=300&h=300&fit=crop",
-      isPublic: true
-    },
-    {
-      id: 3,
-      title: "Electronic Waves",
-      artist: "Synth Master",
-      duration: "5:23",
-      likes: 2156,
-      views: 8932,
-      comments: 67,
-      cover: "https://images.unsplash.com/photo-1721322800607-8c38375eef04?w=300&h=300&fit=crop",
-      isPublic: true
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/dashboard');
     }
-  ];
-
-  const handlePlay = (trackId: number) => {
-    if (currentTrack === trackId && isPlaying) {
-      setIsPlaying(false);
-    } else {
-      setCurrentTrack(trackId);
-      setIsPlaying(true);
-    }
-  };
+  }, [user, loading, navigate]);
 
   const openAuthModal = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
@@ -104,44 +73,32 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Music Feed */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h2 className="text-3xl font-bold text-white mb-8 text-center">
-          Descubra Novas Músicas
-        </h2>
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1 max-w-4xl mx-auto">
-          {mockTracks.map((track) => (
-            <MusicCard
-              key={track.id}
-              track={track}
-              isPlaying={currentTrack === track.id && isPlaying}
-              onPlay={() => handlePlay(track.id)}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Features Section */}
       <div className="bg-black/20 py-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold text-white mb-12 text-center">
             Por que escolher o Soundfly?
           </h2>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-4 gap-8">
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6 text-center">
               <Upload className="h-12 w-12 text-purple-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Upload Fácil</h3>
-              <p className="text-gray-300">Compartilhe suas músicas com capas personalizadas e estilos únicos</p>
+              <p className="text-gray-300">Compartilhe suas músicas com capas personalizadas</p>
             </Card>
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6 text-center">
               <Users className="h-12 w-12 text-pink-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Conecte-se</h3>
-              <p className="text-gray-300">Faça amizades e descubra artistas incríveis na comunidade</p>
+              <p className="text-gray-300">Faça amizades e descubra artistas incríveis</p>
             </Card>
             <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6 text-center">
               <Heart className="h-12 w-12 text-red-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-white mb-2">Interaja</h3>
-              <p className="text-gray-300">Curta, comente e acompanhe suas músicas favoritas</p>
+              <p className="text-gray-300">Curta, comente e acompanhe suas favoritas</p>
+            </Card>
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20 p-6 text-center">
+              <Music className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-white mb-2">Playlists</h3>
+              <p className="text-gray-300">Crie e organize suas playlists favoritas</p>
             </Card>
           </div>
         </div>
