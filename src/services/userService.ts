@@ -9,7 +9,16 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-export const searchUsers = async (searchTerm: string) => {
+interface User {
+  id: string;
+  username: string;
+  displayName?: string;
+  email: string;
+  bio?: string;
+  createdAt: any;
+}
+
+export const searchUsers = async (searchTerm: string): Promise<User[]> => {
   try {
     const q = query(
       collection(db, 'users'),
@@ -17,10 +26,13 @@ export const searchUsers = async (searchTerm: string) => {
       limit(20)
     );
     const snapshot = await getDocs(q);
-    const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const users = snapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    })) as User[];
     
     return users.filter(user => 
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   } catch (error) {

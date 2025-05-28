@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,12 +18,17 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState({ tracks: [], users: [] });
   const [isSearching, setIsSearching] = useState(false);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user && !loading) {
       navigate('/');
     }
   }, [user, loading, navigate]);
+
+  const handlePlayTrack = (trackId: string) => {
+    setCurrentlyPlaying(currentlyPlaying === trackId ? null : trackId);
+  };
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
@@ -178,7 +182,12 @@ const Dashboard = () => {
                     <h3 className="text-xl font-semibold text-white mb-4">Músicas</h3>
                     <div className="grid gap-4">
                       {searchResults.tracks.map((track) => (
-                        <MusicCard key={track.id} track={track} />
+                        <MusicCard 
+                          key={track.id} 
+                          track={track}
+                          isPlaying={currentlyPlaying === track.id}
+                          onPlay={() => handlePlayTrack(track.id)}
+                        />
                       ))}
                     </div>
                   </div>

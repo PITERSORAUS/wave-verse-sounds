@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,6 +21,7 @@ const Profile = () => {
   const [userTracks, setUserTracks] = useState([]);
   const [userReposts, setUserReposts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentlyPlaying, setCurrentlyPlaying] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     username: '',
     displayName: '',
@@ -90,6 +90,10 @@ const Profile = () => {
       });
     }
     setIsEditing(false);
+  };
+
+  const handlePlayTrack = (trackId: string) => {
+    setCurrentlyPlaying(currentlyPlaying === trackId ? null : trackId);
   };
 
   return (
@@ -236,7 +240,12 @@ const Profile = () => {
                 ) : userTracks.length > 0 ? (
                   <div className="space-y-4">
                     {userTracks.map((track) => (
-                      <MusicCard key={track.id} track={track} />
+                      <MusicCard 
+                        key={track.id} 
+                        track={track}
+                        isPlaying={currentlyPlaying === track.id}
+                        onPlay={() => handlePlayTrack(track.id)}
+                      />
                     ))}
                   </div>
                 ) : (
