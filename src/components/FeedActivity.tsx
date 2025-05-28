@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Heart, MessageCircle, Music, User, Repeat } from "lucide-react";
@@ -28,11 +27,8 @@ const FeedActivity = () => {
       try {
         setLoading(true);
         
-        // Get recent public tracks
+        // Get recent public tracks with a simpler query that doesn't require a composite index
         const recentTracks = await getPublicTracks(10);
-        
-        // Get recent reposts (you might want to limit this to friends' reposts)
-        // For now, we'll show all recent reposts
         
         const feedItems: FeedItem[] = [];
         
@@ -147,6 +143,4 @@ const FeedActivity = () => {
       )}
     </div>
   );
-};
-
-export default FeedActivity;
+}
