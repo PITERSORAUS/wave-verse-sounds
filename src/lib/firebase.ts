@@ -8,7 +8,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyD003Z9Jy9KiGWqmA1NpGqT8J2feWqNnq8",
   authDomain: "stereomix-prod.firebaseapp.com",
   projectId: "stereomix-prod",
-  storageBucket: "stereomix-prod.appspot.com",
+  storageBucket: "gs://stereomix-prod.firebasestorage.app",
   messagingSenderId: "1017434587195",
   appId: "1:1017434587195:web:66d940a54e2d111e131c1e"
 };
