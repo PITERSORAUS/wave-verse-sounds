@@ -144,3 +144,5 @@ const FeedActivity = () => {
     </div>
   );
 }
+
+export default FeedActivity
